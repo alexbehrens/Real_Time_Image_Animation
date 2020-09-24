@@ -37,10 +37,10 @@ if not os.path.exists('output'):
 
 relative=True
 adapt_movement_scale=True
-cpu=False
+cpu=True
 
 if video_path:
-    cap = cv2.VideoCapture(video_path) 
+    cap = cv2.VideoCapture(video_path)
     print("[INFO] Loading video from the given path")
 else:
     cap = cv2.VideoCapture(0)
@@ -61,20 +61,20 @@ with torch.no_grad() :
         ret, frame = cap.read()
         frame = cv2.flip(frame,1)
         if ret == True:
-            
+
             if not video_path:
                 x = 143
                 y = 87
                 w = 322
-                h = 322 
+                h = 322
                 frame = frame[y:y+h,x:x+w]
             frame1 = resize(frame,(256,256))[..., :3]
-            
+
             if count == 0:
                 source_image1 = frame1
                 source1 = torch.tensor(source_image1[np.newaxis].astype(np.float32)).permute(0, 3, 1, 2)
                 kp_driving_initial = kp_detector(source1)
-            
+
             frame_test = torch.tensor(frame1[np.newaxis].astype(np.float32)).permute(0, 3, 1, 2)
 
             driving_frame = frame_test
@@ -83,16 +83,16 @@ with torch.no_grad() :
             kp_driving = kp_detector(driving_frame)
             kp_norm = normalize_kp(kp_source=kp_source,
                                 kp_driving=kp_driving,
-                                kp_driving_initial=kp_driving_initial, 
+                                kp_driving_initial=kp_driving_initial,
                                 use_relative_movement=relative,
-                                use_relative_jacobian=relative, 
+                                use_relative_jacobian=relative,
                                 adapt_movement_scale=adapt_movement_scale)
             out = generator(source, kp_source=kp_source, kp_driving=kp_norm)
             predictions.append(np.transpose(out['prediction'].data.cpu().numpy(), [0, 2, 3, 1])[0])
             im = np.transpose(out['prediction'].data.cpu().numpy(), [0, 2, 3, 1])[0]
             im = cv2.cvtColor(im,cv2.COLOR_RGB2BGR)
             joinedFrame = np.concatenate((cv2_source,im,frame1),axis=1)
-            
+
             cv2.imshow('Test',joinedFrame)
             out1.write(img_as_ubyte(joinedFrame))
             count += 1
@@ -100,7 +100,7 @@ with torch.no_grad() :
                 break
         else:
             break
-        
+
     cap.release()
     out1.release()
     cv2.destroyAllWindows()
